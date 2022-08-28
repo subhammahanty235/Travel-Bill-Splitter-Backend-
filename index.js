@@ -12,6 +12,9 @@ connectToDB();
 
 app.use('/api/v1' , require('./routes/userRoutes'))
 app.use('/api/v1' , require('./routes/tripRoutes'))
+app.set('/',(req,res)=>{
+    res.send("Travel Bill Splitter Api")
+})
 const port = process.env.PORT || 5000
 app.listen(port , ()=>{
     console.log("Running on port"+port)
