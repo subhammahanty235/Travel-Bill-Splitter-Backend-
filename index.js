@@ -12,7 +12,7 @@ connectToDB();
 
 app.use('/api/v1' , require('./routes/userRoutes'))
 app.use('/api/v1' , require('./routes/tripRoutes'))
-const port = 5000 || process.env.PORT;
+const port = process.env.PORT || 5000
 app.listen(port , ()=>{
     console.log("Running on port"+port)
 })
