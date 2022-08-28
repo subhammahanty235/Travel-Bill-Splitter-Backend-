@@ -11,6 +11,10 @@ const UserSchema = new Schema(
             type:String,
             required:true,
         },
+        emailId:{
+            type:String,
+            required:true,
+        },
         tripid:{
             type:String,
             required:true,

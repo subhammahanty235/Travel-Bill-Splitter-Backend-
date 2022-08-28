@@ -1,21 +1,31 @@
+require('dotenv').config()
 const User = require('../models/user')
 const Trip = require('../models/trip')
+const jwt = require("jsonwebtoken")
 
 // To login for users with the trip ID of an existing Trip
 const loginToExistingTrip = async(req,res)=>{
-    const{name , password , tripid , amountPaid} = req.body;
+    const{name , password ,emailid, tripid , amountPaid} = req.body;
     let flag = false;         //to check operation is successfull or not.
     try {
         const currentTripId = await Trip.findOne({tripID:tripid})
         if(currentTripId){
             const isuserAreadyPresent = await User.findOne({name:name});
             if(!isuserAreadyPresent){
-                const data = await User.create({
-                    name:name , password:password, tripid:tripid 
+                const user = await User.create({
+                    name:name , password:password, tripid:tripid ,emailId:emailid
                 });
+                const data = {
+                    user: {
+                      id: user.id
+                    // }
+                    }
+                }
+                const authtoken = jwt.sign(data, process.env.JWT_SECRET);
     
                 const addUser = await Trip.findByIdAndUpdate(currentTripId._id,{$push:{users:data._id}})
                 flag = true;
+                res.status(200).json({flag , authtoken})
             }
             else{
                 flag = false;
@@ -27,7 +37,7 @@ const loginToExistingTrip = async(req,res)=>{
         }
 
         
-        res.status(200).json({flag})
+        
     } catch (error) {
         console.log(error)
     }
@@ -39,19 +49,26 @@ const loginToNewTrip = async(req,res)=>{
     let flag = false;        //to check login operation is successfull or not
     try {
         const tripId = Math.floor(Math.random() * (994989 - 123372)) + 123372;                 //it generates a six digit random number from 123372 to 994989 to use as tripId 
-        const data = await User.create({
+        const user = await User.create({
             name:name,
             password:password,
             tripid:tripId
             
         })
+        const data={
+            user:{
+                id:user.id
+            }
+        }
+        const authtoken = jwt.sign(data, process.env.JWT_SECRET);
+
         const data2 = await Trip.create({
             tripID:tripId,
             tripName:tripName,
         })
-        const addUser = await Trip.findByIdAndUpdate(data2._id,{$push:{users:data._id}})       //this will add this user to trip's user array 
+        const addUser = await Trip.findByIdAndUpdate(data2._id,{$push:{users:user._id}})       //this will add this user to trip's user array 
         flag = true  
-        res.send({addUser , flag})
+        res.send({flag , authtoken})
     } catch (error) {
          console.log(error)
     }
@@ -62,11 +79,12 @@ const loginToNewTrip = async(req,res)=>{
 }
 
 const newTransaction = async(req,res) =>{
-    const {expenseTitle , amount , users , myId , tripId} = req.body;
-    let  totalPaidAmount = await User.find({_id : myId}).select("totalAmountpaid , -_id")
-    let  initialTripBudget = await Trip.find({_id : tripId}).select("budgetTotal , -_id")
-    initialTripBudget=  initialTripBudget[0].budgetTotal
-    totalPaidAmount = totalPaidAmount[0].totalAmountpaid
+    const {expenseTitle , amount , users , tripId} = req.body;
+    let myId = req.user.id;
+    let  totalPaidAmount = await User.findById(myId).select("totalAmountpaid , -_id")
+    let  initialTripBudget = await Trip.findById(tripId).select("budgetTotal , -_id")
+    initialTripBudget=  initialTripBudget.budgetTotal
+    totalPaidAmount = totalPaidAmount.totalAmountpaid
     const mypaidTransaction = await User.findByIdAndUpdate(myId , {
         $set:{
             totalAmountpaid:totalPaidAmount += amount 
@@ -108,11 +126,11 @@ const newTransaction = async(req,res) =>{
 
 
 const amountToPay = async(req,res)=>{
-    const id = req.params.id
+    const id = req.user.id
     try {
-        const data = await User.find({_id:id}).select("-_id , expenseDetailstopay , totalAmountToPay ")
-        const filteredData = data[0]
-        res.json(filteredData)
+        const data = await User.findById(id).select("-_id , expenseDetailstopay , totalAmountToPay ")
+        
+        res.json(data)
     } catch (error) {
         console.log(error)
     }
@@ -186,6 +204,23 @@ const recievedMoney = async(req,res)=>{
 }
 
 const getUserDetails = async(req,res)=>{
+    // this will fetch initial details about user and trip after login or page refresh
+    try {
+        let userId = req.user.id;
+        // let tripid = trip.tripId;
+        
+        const user = await User.findById(userId).select("-password")
+        const gettripID = await Trip.find({tripID:user.tripid}).select("_id")
+        const trip = await Trip.findById(gettripID)
+        res.send({user , trip})
+    } catch (error) {
+        console.log(error)
+    }
+
+
+
+}
+const getSpecificUserdetail = async(req,res)=>{
     try {
         const id = req.params.id
         const data = await User.findById(id);
@@ -193,6 +228,7 @@ const getUserDetails = async(req,res)=>{
     } catch (error) {
         console.log(error)
     }
+
 }
 // const recievedMoney = async(req,res)=>{
 
@@ -208,4 +244,4 @@ const getUserDetails = async(req,res)=>{
 // }
 
 
-module.exports = {loginToExistingTrip , loginToNewTrip , newTransaction , amountToPay , PayMoney ,recievedMoney ,getUserDetails}
+module.exports = {loginToExistingTrip , loginToNewTrip , newTransaction , amountToPay , PayMoney ,recievedMoney ,getUserDetails , getSpecificUserdetail}
