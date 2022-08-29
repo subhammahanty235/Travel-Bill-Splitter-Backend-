@@ -5,15 +5,16 @@ const jwt = require("jsonwebtoken")
 
 // To login for users with the trip ID of an existing Trip
 const loginToExistingTrip = async(req,res)=>{
-    const{name , password ,emailid, tripid , amountPaid} = req.body;
+    const{name , password ,emailId, tripid} = req.body;
     let flag = false;         //to check operation is successfull or not.
     try {
         const currentTripId = await Trip.findOne({tripID:tripid})
         if(currentTripId){
-            const isuserAreadyPresent = await User.findOne({name:name});
-            if(!isuserAreadyPresent){
+            const user = await User.findOne({name:name});
+            // res.send(user.password)
+            if(!user){
                 const user = await User.create({
-                    name:name , password:password, tripid:tripid ,emailId:emailid
+                    name:name , password:password, tripid:tripid ,emailId:emailId
                 });
                 const data = {
                     user: {
@@ -28,8 +29,18 @@ const loginToExistingTrip = async(req,res)=>{
                 res.status(200).json({flag , authtoken})
             }
             else{
-                flag = false;
+                if(user.password === password){
+                    const data = {
+                        user: {
+                          id: user.id
+                        }
+                    }
+                    const authtoken = jwt.sign(data, process.env.JWT_SECRET);
+                    flag = true;
+                    res.status(200).json({flag , authtoken})
+                }
             }
+            
             
         }
         else{
@@ -45,15 +56,15 @@ const loginToExistingTrip = async(req,res)=>{
 
 // To login if user want to create a new trip
 const loginToNewTrip = async(req,res)=>{
-    const{name , password , tripName ,} = req.body;
+    const{name , password , tripName ,emailId} = req.body;
     let flag = false;        //to check login operation is successfull or not
     try {
         const tripId = Math.floor(Math.random() * (994989 - 123372)) + 123372;                 //it generates a six digit random number from 123372 to 994989 to use as tripId 
         const user = await User.create({
             name:name,
             password:password,
-            tripid:tripId
-            
+            tripid:tripId,
+            emailId:emailId
         })
         const data={
             user:{
