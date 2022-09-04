@@ -99,10 +99,16 @@ const newTransaction = async(req,res) =>{
     let  myName = await User.findById(myId).select("name , -_id")
     initialTripBudget=  initialTripBudget.budgetTotal
     totalPaidAmount = totalPaidAmount.totalAmountpaid
+    const incrementBudget = await Trip.findByIdAndUpdate(tripId,{
+        $inc:{
+            budgetTotal:amount,
+        }
+    })
     const mypaidTransaction = await User.findByIdAndUpdate(myId , {
         $set:{
             totalAmountpaid:totalPaidAmount += amount 
         },
+
         $push:{
             allPaymentDetailsofPaid:{
                 users:users,
