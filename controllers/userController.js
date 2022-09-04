@@ -92,8 +92,11 @@ const loginToNewTrip = async(req,res)=>{
 const newTransaction = async(req,res) =>{
     const {expenseTitle , amount , users , tripId} = req.body;
     let myId = req.user.id;
-    let  totalPaidAmount = await User.findById(myId).select("totalAmountpaid , -_id")
+   
+    
     let  initialTripBudget = await Trip.findById(tripId).select("budgetTotal , -_id")
+    let  totalPaidAmount = await User.findById(myId).select("totalAmountpaid , -_id")
+    let  myName = await User.findById(myId).select("name , -_id")
     initialTripBudget=  initialTripBudget.budgetTotal
     totalPaidAmount = totalPaidAmount.totalAmountpaid
     const mypaidTransaction = await User.findByIdAndUpdate(myId , {
@@ -105,7 +108,7 @@ const newTransaction = async(req,res) =>{
                 users:users,
                 expensetitle: expenseTitle,
                 amount:amount ,
-                paidBy:myId
+                paidBy:myName.name,
             }
         }
     })
@@ -149,7 +152,8 @@ const amountToPay = async(req,res)=>{
 
 
 const PayMoney = async(req,res)=>{
-    const {amount , myId , payingTo , payingfor } = req.body
+    const {amount ,  payingTo , payingfor } = req.body
+    const myId = req.user.id
     let flag = false;
     try {
         const setpaidByMe = await User.updateOne({_id: myId, "expenseDetailstopay.expenseTitle": payingfor },{
@@ -164,11 +168,17 @@ const PayMoney = async(req,res)=>{
                 totalAmountToPay:-amount
                  
             },
+            $inc:{
+                totalAmountPaidToOthers:amount
+            },
             $push:{
                 myPaymentsToOthers:{
                     amount:amount,
                     paidTo:payingTo,
                     Paidfor:payingfor,
+                },
+                allPaymentDetailsofPaid:{
+                    returnedMoney:myId._id
                 }
             }
         })
@@ -180,7 +190,12 @@ const PayMoney = async(req,res)=>{
                     recievedFrom:myId,
                     amountRecieved:amount,
                     recievedFor:payingfor,
+                    
+                },
+                allPaymentDetailsofPaid:{
+
                 }
+                
             },
             $inc:{
                 
@@ -190,7 +205,7 @@ const PayMoney = async(req,res)=>{
     
         })
         flag = true;
-        res.json(flag)
+        // res.json(flag)
     } catch (error) {
        
         console.log(error)
@@ -235,7 +250,8 @@ const getSpecificUserdetail = async(req,res)=>{
     try {
         const id = req.params.id
         const data = await User.findById(id);
-        res.send(data)
+        return data.name;
+        // res.send(data)
     } catch (error) {
         console.log(error)
     }

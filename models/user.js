@@ -32,6 +32,10 @@ const UserSchema = new Schema(
             type:Number,
             default:0
         },
+        totalAmountPaidToOthers:{
+            type:Number,
+            default:0
+        },
         expenseDetailstopay:[
 
             {
@@ -64,6 +68,11 @@ const UserSchema = new Schema(
                 users:[String],
                 expensetitle:String,
                 amount:Number,
+                date:{
+                    type:Date,
+                    default:Date.now()
+                },
+                returnedMoney:[String]
             }
         ],
 
@@ -93,7 +102,9 @@ const UserSchema = new Schema(
            
 
         ]
+        
     }
+
 )
 
 const User = mongoose.model('users' , UserSchema);
