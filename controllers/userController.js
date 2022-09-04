@@ -131,7 +131,7 @@ const newTransaction = async(req,res) =>{
             },
             $push:{
                 expenseDetailstopay:{
-                    paidBy:myId,
+                    paidBy:myName.name,
                     expenseTitle:expenseTitle,
                     amount:moneyeveryindividualwillPay
                 }
