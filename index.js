@@ -8,7 +8,7 @@ const app = express();
 
 app.use(express.json());
 connectToDB();
-const whitelist = ["http://localhost:3000"]
+const whitelist = ["http://localhost:3000" , "https://tripperabc.netlify.app/"]
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.indexOf(origin) !== -1) {
@@ -30,6 +30,7 @@ app.use(function(req, res, next) {
 
 app.use('/api/v1' , require('./routes/userRoutes'))
 app.use('/api/v1' , require('./routes/tripRoutes'))
+app.use('/api/v1',require('./routes/emailroutes'))
 
 app.get('/',(req,res)=>{
     res.send("Travel Bill Splitter Api")
