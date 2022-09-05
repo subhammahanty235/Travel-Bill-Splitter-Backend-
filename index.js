@@ -8,7 +8,7 @@ const app = express();
 
 app.use(express.json());
 connectToDB();
-const whitelist = ["http://localhost:3000" , "https://tripperabc.netlify.app/"]
+const whitelist = [ "https://tripperabc.netlify.app" , "http://localhost:3000"]
 const corsOptions = {
   origin: function (origin, callback) {
     if (!origin || whitelist.indexOf(origin) !== -1) {
