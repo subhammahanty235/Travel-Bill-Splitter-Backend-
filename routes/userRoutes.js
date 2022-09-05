@@ -7,7 +7,7 @@ router.post('/login/existing-trip/' , loginToExistingTrip);
 router.post('/login/new-trip/' , loginToNewTrip);
 router.put('/user/new-transaction/' ,fetchuser, newTransaction);
 router.get('/user/amount-to-pay/',fetchuser, amountToPay)
-router.post('/user/paymoney' , PayMoney)
+router.post('/user/paymoney' ,fetchuser, PayMoney)
 router.get('/user/totalmoneyrecieved/:id',recievedMoney)
 router.post('/user/me' ,fetchuser, getUserDetails);
 router.get('/user/searchdetails/:id' , getSpecificUserdetail)

@@ -2,6 +2,7 @@ require('dotenv').config()
 const User = require('../models/user')
 const Trip = require('../models/trip')
 const jwt = require("jsonwebtoken")
+const { findOneAndUpdate, findOne } = require('../models/trip')
 
 // To login for users with the trip ID of an existing Trip
 const loginToExistingTrip = async(req,res)=>{
@@ -9,6 +10,7 @@ const loginToExistingTrip = async(req,res)=>{
     let flag = false;         //to check operation is successfull or not.
     try {
         const currentTripId = await Trip.findOne({tripID:tripid})
+        console.log(currentTripId)
         if(currentTripId){
             const user = await User.findOne({name:name});
             // res.send(user.password)
@@ -24,7 +26,7 @@ const loginToExistingTrip = async(req,res)=>{
                 }
                 const authtoken = jwt.sign(data, process.env.JWT_SECRET);
     
-                const addUser = await Trip.findByIdAndUpdate(currentTripId._id,{$push:{users:data._id}})
+                const addUser = await Trip.findByIdAndUpdate(currentTripId._id,{$push:{users:user.name}})
                 flag = true;
                 res.status(200).json({flag , authtoken})
             }
@@ -39,13 +41,18 @@ const loginToExistingTrip = async(req,res)=>{
                     flag = true;
                     res.status(200).json({flag , authtoken})
                 }
+                else{
+                    res.status(404).send("wrong password")
+                }
             }
             
             
         }
         else{
             flag = false;
+            res.status(404).send("wron data")
         }
+        res.send("working")
 
         
         
@@ -77,7 +84,7 @@ const loginToNewTrip = async(req,res)=>{
             tripID:tripId,
             tripName:tripName,
         })
-        const addUser = await Trip.findByIdAndUpdate(data2._id,{$push:{users:user._id}})       //this will add this user to trip's user array 
+        const addUser = await Trip.findByIdAndUpdate(data2._id,{$push:{users:user.name}})       //this will add this user to trip's user array 
         flag = true  
         res.send({flag , authtoken})
     } catch (error) {
@@ -91,37 +98,43 @@ const loginToNewTrip = async(req,res)=>{
 
 const newTransaction = async(req,res) =>{
     const {expenseTitle , amount , users , tripId} = req.body;
+    console.log(users)
+    let famount = Number(amount)
     let myId = req.user.id;
    
-    
-    let  initialTripBudget = await Trip.findById(tripId).select("budgetTotal , -_id")
+    let flag = false;
+    try {
+        let  initialTripBudget = await Trip.findById(tripId).select("tripID , -_id")
     let  totalPaidAmount = await User.findById(myId).select("totalAmountpaid , -_id")
     let  myName = await User.findById(myId).select("name , -_id")
     initialTripBudget=  initialTripBudget.budgetTotal
     totalPaidAmount = totalPaidAmount.totalAmountpaid
     const incrementBudget = await Trip.findByIdAndUpdate(tripId,{
         $inc:{
-            budgetTotal:amount,
+            budgetTotal: famount,
         }
     })
+    // const aab = await findOneAndUpdate({tripID:tripId ,  })
     const mypaidTransaction = await User.findByIdAndUpdate(myId , {
         $set:{
-            totalAmountpaid:totalPaidAmount += amount 
+            totalAmountpaid:totalPaidAmount += famount 
         },
 
         $push:{
             allPaymentDetailsofPaid:{
                 users:users,
                 expensetitle: expenseTitle,
-                amount:amount ,
+                amount:famount ,
                 paidBy:myName.name,
             }
         }
     })
 
-    
-    let totalMoneyIPaid = amount;
-    let moneyeveryindividualwillPay = totalMoneyIPaid / users.length
+    flag = true;
+    let totalMoneyIPaid = famount;
+    let totalPayers = users.length + 1;
+    let moneyeveryindividualwillPay = totalMoneyIPaid/totalPayers
+    console.log(moneyeveryindividualwillPay)
     users.forEach(async(user)=>{
         const id = await User.find({name:user}).select("_id , totalAmountToPay")
         const initialtotalAmount = id[0].totalAmountToPay;
@@ -140,7 +153,15 @@ const newTransaction = async(req,res) =>{
         })
         
     })
-    res.json({mypaidTransaction} )
+    flag = true;
+    } catch (error) {
+        console.log(error)
+        flag = false;
+    }
+    
+   
+
+    res.send(flag)
     
 }
 
@@ -159,7 +180,13 @@ const amountToPay = async(req,res)=>{
 
 const PayMoney = async(req,res)=>{
     const {amount ,  payingTo , payingfor } = req.body
+    let famount = Number(amount)
     const myId = req.user.id
+    const mydata = await User.findById(myId).select("name , totalAmountToPay , -_id")
+    // const othersdata = await User.findById(payingTo).select("name , -_id")
+    const othersdata = await User.findOne({name:payingTo}).select("_id")
+    // res.send(othersdata)
+    // console.log(othersdata)
     let flag = false;
     try {
         const setpaidByMe = await User.updateOne({_id: myId, "expenseDetailstopay.expenseTitle": payingfor },{
@@ -167,49 +194,68 @@ const PayMoney = async(req,res)=>{
                 "expenseDetailstopay.$.paidByMe": true
 
                 }
-        })
-        const setPaidByMe = await User.findByIdAndUpdate(myId , {
-            
-            $inc:{
-                totalAmountToPay:-amount
-                 
-            },
-            $inc:{
-                totalAmountPaidToOthers:amount
-            },
+
+        })           //working
+
+        const setretmoney = await User.updateOne({_id:othersdata._id , "allPaymentDetailsofPaid.expensetitle": payingfor },{
             $push:{
-                myPaymentsToOthers:{
-                    amount:amount,
-                    paidTo:payingTo,
-                    Paidfor:payingfor,
-                },
-                allPaymentDetailsofPaid:{
-                    returnedMoney:myId._id
+                "allPaymentDetailsofPaid.$.returnedMoney": mydata.name
+
                 }
-            }
+
         })
         
-       
-        const addToRecieved = await User.findByIdAndUpdate(payingTo , {
+        const setPaidByMe = await User.findByIdAndUpdate(myId , {
+            
+            $set:{
+                totalAmountToPay:mydata.totalAmountToPay - famount
+            },
+            $inc:{
+                totalAmountPaidToOthers:famount
+            },
+            // $set:{
+
+            // },
+            $push:{
+                myPaymentsToOthers:{
+                    amount:famount,
+                    paidTo:payingTo,
+                    paidFor:payingfor,
+                },
+                
+            }
+        })                              //working
+        
+    //    const apmto = await User.findOne({_id : payingTo , "allPaymentDetailsofPaid.expensetitle":payingfor},{
+    //         $push:{
+    //             "allPaymentDetailsofPaid.$.returnedMoney": mydata.name
+
+    //         }
+    //    })               //not working
+        const addToRecieved = await User.findByIdAndUpdate(othersdata._id , {
             $push:{
                 paymentRecievedDetails:{
-                    recievedFrom:myId,
+                    recievedFrom:mydata.name,
                     amountRecieved:amount,
                     recievedFor:payingfor,
                     
                 },
-                allPaymentDetailsofPaid:{
-
-                }
+                
                 
             },
+            // $set:{
+            //     allPaymentDetailsofPaid:{
+            //         returnedMoney:mydata.name
+            //     }
+            // }
             $inc:{
                 
                 totalAmountRecieved:amount
                 
             }
     
-        })
+        })            //not working
+
         flag = true;
         // res.json(flag)
     } catch (error) {
@@ -256,8 +302,8 @@ const getSpecificUserdetail = async(req,res)=>{
     try {
         const id = req.params.id
         const data = await User.findById(id);
-        return data.name;
-        // res.send(data)
+        // return data.name;
+        res.send(data)
     } catch (error) {
         console.log(error)
     }
