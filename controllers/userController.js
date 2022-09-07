@@ -10,7 +10,7 @@ const loginToExistingTrip = async(req,res)=>{
     let flag = false;         //to check operation is successfull or not.
     try {
         const currentTripId = await Trip.findOne({tripID:tripid})
-        console.log(currentTripId)
+        
         if(currentTripId){
             const user = await User.findOne({name:name});
             // res.send(user.password)
@@ -50,9 +50,11 @@ const loginToExistingTrip = async(req,res)=>{
         }
         else{
             flag = false;
-            res.status(404).send("wron data")
+            res.send('wrong trip id')
         }
-        res.send("working")
+
+
+       
 
         
         
