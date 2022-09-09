@@ -37,7 +37,7 @@ const loginToExistingTrip = async (req, res) => {
                 res.status(200).json({ flag, authtoken })
             }
             else {
-                
+
                 if (user.password === password) {
                     const data = {
                         user: {
@@ -49,7 +49,7 @@ const loginToExistingTrip = async (req, res) => {
                     res.status(200).json({ flag, authtoken })
                 }
                 else {
-                    res.status(404).json({msg:"wrong Password"})
+                    res.status(404).send("wrong password")
                 }
             }
 
