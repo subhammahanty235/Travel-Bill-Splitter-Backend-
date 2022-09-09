@@ -12,7 +12,7 @@ const loginToExistingTrip = async (req, res) => {
         const currentTripId = await Trip.findOne({ tripID: tripid })
 
         if (currentTripId) {
-            const user = await Trip.findOne({
+            const user = await User.findOne({
                 "$and":
                     [
                         { "name": "name" },
