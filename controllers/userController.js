@@ -49,7 +49,8 @@ const loginToExistingTrip = async (req, res) => {
                     res.status(200).json({ flag, authtoken })
                 }
                 else {
-                    res.status(404).send("wrong password")
+                    flag = false
+                    res.status(404).json(flag)
                 }
             }
 
@@ -57,7 +58,7 @@ const loginToExistingTrip = async (req, res) => {
         }
         else {
             flag = false;
-            res.send('wrong trip id')
+            res.status(404).json(flag)
         }
 
 
