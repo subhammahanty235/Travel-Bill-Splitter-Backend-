@@ -16,7 +16,7 @@ const loginToExistingTrip = async (req, res) => {
                 "$and":
                     [
                         { "name": "name" },
-                        { "tripId": "tripid" }
+                        { "tripid": "tripid" }
                     ]
             });
             // res.send(user.password)
