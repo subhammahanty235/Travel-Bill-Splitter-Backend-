@@ -15,8 +15,8 @@ const loginToExistingTrip = async (req, res) => {
             const user = await User.findOne({
                 "$and":
                     [
-                        { "name": "name" },
-                        { "tripid": "tripid" }
+                        { "name": name },
+                        { "tripid": tripid }
                     ]
             });
             // res.send(user.password)
